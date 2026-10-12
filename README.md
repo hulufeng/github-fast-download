@@ -2,8 +2,35 @@
 
 加速 GitHub 大文件（尤其是 release 资产）下载的 **WorkBuddy 技能**。
 
-当下载慢到单线程要 10 小时、用户喊着「像迅雷一样多线程/多源加速」时，
-这个技能先**诊断文件到底有几个真实来源**，再选对打法，而不是盲目开线程。
+当下载慢到单线程要 10 小时、你喊着「像迅雷一样多线程 / 多源加速」时，这个技能先**诊断文件到底有几个真实来源**，再选对打法，而不是盲目开线程。
+
+## 目录
+
+- [快速开始](#快速开始)
+- [它能解决什么](#它能解决什么)
+- [核心结论（踩坑实测）](#核心结论踩坑实测)
+- [安装（作为 WorkBuddy 技能）](#安装作为-workbuddy-技能)
+- [用法](#用法)
+- [本机实测陷阱（必读）](#本机实测陷阱必读)
+- [许可证](#许可证)
+- [贡献](#贡献)
+
+## 快速开始
+
+三步跑起来：
+
+1. **装技能**：把仓库克隆到用户级技能目录
+   ```bash
+   git clone https://github.com/hulufeng/github-fast-download.git \
+     ~/.workbuddy/skills/github-fast-download
+   ```
+2. **拿直链**：只要有 release 下载页 URL 即可，脚本会自动解析签名直链（无需手动复制那串长 URL）。
+3. **开下**：
+   ```bash
+   python scripts/dl_parallel.py --out FILE.zip --total <字节数> \
+       --release-url https://github.com/OWNER/REPO/releases/download/TAG/ASSET
+   ```
+   下载完会打印 `final=<n> expect=<n>` 与 `ZIP_OK`（zip 完整性校验通过）。遇到更慢的单源文件，把 `--threads` 调大到 64（默认）即可。
 
 ## 它能解决什么
 
@@ -13,13 +40,10 @@
 
 ## 核心结论（踩坑实测）
 
-GitHub release 资产通常是**单源**文件：所有 ghproxy 等镜像最终都 302 回
-同一个 Azure blob。**所以「迅雷式多源聚合」在这里根本不成立**——只能走
-**单源多连接**。
+GitHub release 资产通常是**单源**文件：所有 ghproxy 等镜像最终都 302 回同一个 Azure blob。**所以「迅雷式多源聚合」在这里根本不成立**——只能走**单源多连接**。
 
 - 单连接被限速 ≈ 15 KB/s；开 64 条连接线性聚合到 ≈ 600 KB/s ~ 1.1 MB/s。
-- 单源 → `scripts/dl_parallel.py`（Python 64 线程分片 + 1MB 小包断点续写 +
-  实时读直链抗 token 过期）。
+- 单源 → `scripts/dl_parallel.py`（Python 64 线程分片 + 1MB 小包断点续写 + 实时读直链抗 token 过期）。
 - 真多源（多个独立 URL）→ `aria2c -x 16 -s 16 -k 1M -Z url1 url2 url3`。
 
 完整决策树与陷阱清单见 [`references/strategy-and-pitfalls.md`](references/strategy-and-pitfalls.md)。
@@ -34,7 +58,7 @@ git clone https://github.com/hulufeng/github-fast-download.git \
 # 方式二：下载 zip 解压到 ~/.workbuddy/skills/github-fast-download/
 ```
 
-重启/刷新 WorkBuddy 后，遇到慢速下载会自动触发本技能。
+重启 / 刷新 WorkBuddy 后，遇到慢速下载会自动触发本技能。
 
 ## 用法
 
@@ -71,9 +95,13 @@ aria2c -x 16 -s 16 -k 1M -Z "url1" "url2" "url3"
 
 ## 许可证
 
-**非商业用途授权**（基于 MIT 条款，但禁止商用）。
+**CC BY-NC 4.0（署名—非商业性使用 4.0 国际）**。
 
-- ✅ 允许：个人学习、研究、非商业项目中使用、修改、分发本技能。
+- ✅ 允许：个人学习、研究、非商业项目中使用、修改、分发本技能，须保留署名。
 - ❌ 禁止：任何商业用途（包括但不限于将本技能或其派生作品用于盈利性产品 / 服务、商业培训等），未经版权人书面许可不得商用。
 
-完整条款见 [LICENSE](LICENSE)。
+完整法律文本见 [LICENSE](LICENSE)；人类可读摘要见 <https://creativecommons.org/licenses/by-nc/4.0/>。
+
+## 贡献
+
+欢迎参与改进，详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
